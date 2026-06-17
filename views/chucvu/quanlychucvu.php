@@ -24,6 +24,7 @@ if (isset($_GET['btnXoa'])) {
     } else {
         mysqli_execute_query($con, "delete from chucvu where machucvu='$textMaChucVu'");
         echo "<script> alert ('Xóa thành công')  </script>";
+        header("Location: quanlychucvu.php");
     }
 }
 

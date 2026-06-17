@@ -129,17 +129,6 @@ Password: admin
 
 This project is licensed under the **MIT License** – feel free to use, modify and share.
 
----
-
-Nếu bạn muốn mình:
-
-* ✨ Cá nhân hóa README theo **tên bạn**
-* 🧩 Viết thêm **ERD / sơ đồ luồng**
-* 📸 Thêm **Screenshots section**
-* 🎓 Chuẩn hóa theo **đồ án CNTT / báo cáo tốt nghiệp**
-
-👉 Chỉ cần nói mình chỉnh tiếp phần nào nhé 🚀
-
 ## 3.1.2. Thiết kế chi tiết các bảng dữ liệu
 
 ### 1. Bảng `taikhoan` – Quản lý truy cập hệ thống

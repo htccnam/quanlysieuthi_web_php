@@ -21,8 +21,14 @@ if (isset($_POST['btnThem'])) {
 
 if (isset($_GET['btnXoa'])) {
     $maKhuyenMai = $_GET['makhuyenmai'];
-    mysqli_execute_query($con, "delete from khuyenmai where makhuyenmai='$maKhuyenMai'");
-    echo "<script>alert('Xóa thành công')</script>";
+     $check = mysqli_execute_query($con, "select makhuyenmai from donhang where makhuyenmai='$maKhuyenMai'");
+    if (mysqli_num_rows($check) > 0) {
+        echo "<script>alert('Khuyến mãi đã được áp dụng cho đơn hàng, không thể xóa!');</script>";
+    } else {
+        mysqli_execute_query($con, "delete from khuyenmai where makhuyenmai='$maKhuyenMai'");
+        echo "<script>alert('Xóa thành công');</script>";
+        header("Location: quanlykhuyenmai.php");
+    }
 }
 
 if (isset($_POST['btnTimKiem'])) {
