@@ -328,5 +328,3 @@ Dựa trên cấu trúc file `menu_admin.php`, hệ thống bao gồm các phân
 ### 5. Marketing
 
 * Quản lý khuyến mãi (`quanlykhuyenmai.php`)
-
-Chỉ cần nói mục tiêu nhé 👍
