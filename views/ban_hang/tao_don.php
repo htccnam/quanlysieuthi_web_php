@@ -70,7 +70,7 @@ if (isset($_POST['btn_save_order'])) {
                 $calc_discount = $km_d['sotiengiam'];
             }
         }
-        $final_total_db = max(0, $calc_subtotal - $calc_discount);
+        $final_total = max(0, $calc_subtotal - $calc_discount);
 
         $check_exist = $con->query("SELECT madonhang FROM donhang WHERE madonhang = '$madon'");
         if ($check_exist->num_rows > 0) {
@@ -79,7 +79,7 @@ if (isset($_POST['btn_save_order'])) {
             $km_val = !empty($old['makhuyenmai']) ? "'" . $old['makhuyenmai'] . "'" : "NULL";
 
             $sql_dh = "INSERT INTO donhang (madonhang, makhachhang, manhanvien, makhuyenmai, ngaylap, phuongthucban, thanhtoan, tongtien) 
-                       VALUES ('$madon', '{$old['makhachhang']}', '{$old['manhanvien']}', $km_val, '{$old['ngaylap']}', '{$old['phuongthucban']}', '{$old['thanhtoan']}', '$final_total_db')";
+                       VALUES ('$madon', '{$old['makhachhang']}', '{$old['manhanvien']}', $km_val, '{$old['ngaylap']}', '{$old['phuongthucban']}', '{$old['thanhtoan']}', '$final_total')";
 
             if ($con->query($sql_dh)) {
                 $cleaned_cart = [];
