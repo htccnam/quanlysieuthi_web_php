@@ -69,7 +69,7 @@ if (isset($_POST['btn_exchange'])) {
             
             if (mysqli_query($conn, $sql_update)) {
 
-                $sql_history = "INSERT INTO lichsu_doiqua (ma_khachhang, ten_qua, diem_da_doi) VALUES ('$code_khach', '$ten_qua', $diem_qua)";
+                $sql_history = "INSERT INTO lichsudoiqua (makhachhang, tenqua, diemtru, thoigian) VALUES ('$code_khach', '$ten_qua', $diem_qua, NOW())";
                 mysqli_query($conn, $sql_history);
 
                 $message = "<div style='text-align:center;'>
@@ -90,11 +90,11 @@ if (isset($_POST['btn_exchange'])) {
 $list_customers = mysqli_query($conn, "SELECT * FROM khachhang ORDER BY tenkhachhang ASC");
 
 
-$sql_history_list = "SELECT h.*, k.tenkhachhang, k.makhachhang 
-                     FROM lichsu_doiqua h 
-                     JOIN khachhang k ON h.ma_khachhang = k.makhachhang 
-                     ORDER BY h.ngay_doi DESC";
-$history_result = mysqli_query($con, $sql_history_list);
+$sql_history_list = "SELECT h.*, k.tenkhachhang 
+                     FROM lichsudoiqua h 
+                     JOIN khachhang k ON h.makhachhang = k.makhachhang 
+                     ORDER BY h.thoigian DESC";
+$history_result = mysqli_query($conn, $sql_history_list);
 ?>
 
 <!DOCTYPE html>
@@ -189,32 +189,32 @@ $history_result = mysqli_query($con, $sql_history_list);
                 <span class="close-btn" onclick="closeHistory()">&times;</span>
             </div>
             <div class="modal-body">
-                <table class="history-table">
-                    <thead>
-                        <tr>
-                            <th>Thời Gian</th>
-                            <th>Khách Hàng</th>
-                            <th>Món Quà</th>
-                            <th>Điểm Trừ</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if (mysqli_num_rows($history_result) > 0): ?>
-                            <?php while($h = mysqli_fetch_assoc($history_result)): ?>
+<table class="history-table">
+                        <thead>
                             <tr>
-                                <td><?php echo date('d/m/Y H:i', strtotime($h['ngay_doi'])); ?></td>
-                                <td>
-                                    <b><?php echo $h['tenkhachhang']; ?></b><br>
-                                    <small style="color:#888"><?php echo $h['makhachhang']; ?></small>
-                                </td>
-                                <td style="color: var(--primary-color); font-weight: 500;"><?php echo $h['ten_qua']; ?></td>
-                                <td style="color: var(--danger);">-<?php echo number_format($h['diem_da_doi']); ?></td>
+                                <th>Thời Gian</th>
+                                <th>Khách Hàng</th>
+                                <th>Món Quà</th>
+                                <th>Điểm Trừ</th>
                             </tr>
-                            <?php endwhile; ?>
-                        <?php else: ?>
-                            <tr><td colspan="4" style="text-align:center; padding: 20px; color:#888;">Chưa có lịch sử đổi quà nào.</td></tr>
-                        <?php endif; ?>
-                    </tbody>
+                        </thead>
+                        <tbody>
+                            <?php if (mysqli_num_rows($history_result) > 0): ?>
+                                <?php while($h = mysqli_fetch_assoc($history_result)): ?>
+                                <tr>
+                                    <td><?php echo date('d/m/Y H:i', strtotime($h['thoigian'])); ?></td>
+                                    <td>
+                                        <b><?php echo $h['tenkhachhang']; ?></b><br>
+                                        <small style="color:#888"><?php echo $h['makhachhang']; ?></small>
+                                    </td>
+                                    <td style="color: var(--primary-color); font-weight: 500;"><?php echo $h['tenqua']; ?></td>
+                                    <td style="color: var(--danger);">-<?php echo number_format($h['diemtru']); ?></td>
+                                </tr>
+                                <?php endwhile; ?>
+                            <?php else: ?>
+                                <tr><td colspan="4" style="text-align:center; padding: 20px; color:#888;">Chưa có lịch sử đổi quà nào.</td></tr>
+                            <?php endif; ?>
+                        </tbody>
                 </table>
             </div>
             <div class="modal-footer">

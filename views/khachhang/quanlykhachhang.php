@@ -77,9 +77,31 @@ if (isset($_POST['btn_save'])) {
 
 if (isset($_GET['action']) && $_GET['action'] == 'delete' && isset($_GET['code'])) {
     $code = $_GET['code'];
-    $sql = "DELETE FROM khachhang WHERE makhachhang = '$code'";
-    if (mysqli_query($conn, $sql)) { 
-        $message = "Đã xóa khách hàng có mã $code!"; $msg_type = "success"; 
+    
+    // Bước 1: Kiểm tra điểm tích lũy (Logic nghiệp vụ theo ý tưởng của bạn)
+    $check_diem_query = mysqli_query($conn, "SELECT diemtichluy FROM khachhang WHERE makhachhang = '$code'");
+    $khachhang_info = mysqli_fetch_assoc($check_diem_query);
+
+    if ($khachhang_info && $khachhang_info['diemtichluy'] > 0) {
+        $message = "Khách hàng hiện đang có đơn hàng không thể xóa!"; 
+        $msg_type = "error";
+    } else {
+        // Bước 2: Tiến hành xóa và BẮT LỖI Database (Bảo vệ hệ thống không bị sập)
+        try {
+            $sql = "DELETE FROM khachhang WHERE makhachhang = '$code'";
+            if (mysqli_query($conn, $sql)) { 
+                $message = "Đã xóa khách hàng có mã $code!"; 
+                $msg_type = "success"; 
+            }
+        } catch (mysqli_sql_exception $e) {
+            // Mã lỗi 1451 là mã đặc trưng của lỗi vi phạm khóa ngoại (Foreign Key)
+            if ($e->getCode() == 1451) {
+                $message = "Khách hàng hiện đang có đơn hàng không thể xóa!";
+            } else {
+                $message = "Lỗi khi xóa: " . $e->getMessage();
+            }
+            $msg_type = "error";
+        }
     }
 }
 
