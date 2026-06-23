@@ -104,8 +104,10 @@ if (isset($_POST['btn_save_order'])) {
                     $con->query($sql_update_kho);
                 }
                 // tính điểm tích lũy
-                if (!empty($old_kh)) {
+                $ma_khach_mua_hang = $old['makhachhang'];
+                if (!empty($ma_khach_mua_hang)) {
                 
+                    // Logic tính điểm: Tổng tiền / 10.000 (Ví dụ: 100k = 10 điểm)
                     $diem_tich_luy_them = floor($final_total / 10000); 
                     $diem_hien_tai_them = floor($final_total / 1000);
 
@@ -113,7 +115,7 @@ if (isset($_POST['btn_save_order'])) {
                     $sql_update_diem = "UPDATE khachhang 
                                         SET diemtichluy = diemtichluy + $diem_tich_luy_them,
                                             diemhientai = diemhientai + $diem_hien_tai_them
-                                        WHERE makhachhang = '$old_kh'";
+                                        WHERE makhachhang = '$ma_khach_mua_hang'";
                     
                     $con->query($sql_update_diem);
                 }
