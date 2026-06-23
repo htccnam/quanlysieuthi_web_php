@@ -59,7 +59,7 @@ include("check_dangnhap.php");
 
                 <li><a href="khuyenmai/quanlykhuyenmai.php" target="contentFrame">📰 Khuyến mại</a></li>
 
-                <li><a href="logo.php" target="contentFrame">👔 Nhân sự</a>
+                <li><a href="logo.php" target="contentFrame">👔 Nhân sự ▼</a>
                     <ul>
                         <li><a href="nhanvien/quanlynhanvien.php" target="contentFrame">Quản lý nhân viên</a></li>
                         <li><a href="chucvu/quanlychucvu.php" target="contentFrame">Quản lý chức vụ</a></li>

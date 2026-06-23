@@ -34,11 +34,11 @@ if (isset($_POST['btnDangnhap'])) {
     <form action="" method="POST" style="height: 300px;width: 500px; margin-top: 100px; margin: 50px auto;"
         class="formnhap">
         <label for="txtTaiKhoan">Tài khoản</label>
-        <input type="text" name="txtTaiKhoan" required>
+        <input type="text" name="txtTaiKhoan" placeholder="nhập tài khoản" required>
         <br>
 
         <label for="txtMatKhau">Mật khẩu</label>
-        <input type="text" name="txtMatKhau" required>
+        <input type="text" name="txtMatKhau" placeholder="nhập mật khẩu" required>
         <br>
 
         <button name="btnDangnhap" style="width: 100%;" class="buttonThem">đăng nhập</button>
