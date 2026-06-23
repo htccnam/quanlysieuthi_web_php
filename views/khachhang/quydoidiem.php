@@ -1,7 +1,10 @@
 <?php
 require_once '../connectdb.php';
-if (isset($con)) $conn = $con;
-
+if (isset($con))
+    { $conn = $con;
+ }else {
+    die("Lỗi kết nối");
+}
 
 $gift_list = [
     1 => [
@@ -91,7 +94,7 @@ $sql_history_list = "SELECT h.*, k.tenkhachhang, k.makhachhang
                      FROM lichsu_doiqua h 
                      JOIN khachhang k ON h.ma_khachhang = k.makhachhang 
                      ORDER BY h.ngay_doi DESC";
-$history_result = mysqli_query($conn, $sql_history_list);
+$history_result = mysqli_query($con, $sql_history_list);
 ?>
 
 <!DOCTYPE html>

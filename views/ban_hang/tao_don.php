@@ -70,7 +70,7 @@ if (isset($_POST['btn_save_order'])) {
                 $calc_discount = $km_d['sotiengiam'];
             }
         }
-        $final_total_db = max(0, $calc_subtotal - $calc_discount);
+        $final_total = max(0, $calc_subtotal - $calc_discount);
 
         $check_exist = $con->query("SELECT madonhang FROM donhang WHERE madonhang = '$madon'");
         if ($check_exist->num_rows > 0) {
@@ -79,7 +79,7 @@ if (isset($_POST['btn_save_order'])) {
             $km_val = !empty($old['makhuyenmai']) ? "'" . $old['makhuyenmai'] . "'" : "NULL";
 
             $sql_dh = "INSERT INTO donhang (madonhang, makhachhang, manhanvien, makhuyenmai, ngaylap, phuongthucban, thanhtoan, tongtien) 
-                       VALUES ('$madon', '{$old['makhachhang']}', '{$old['manhanvien']}', $km_val, '{$old['ngaylap']}', '{$old['phuongthucban']}', '{$old['thanhtoan']}', '$final_total_db')";
+                       VALUES ('$madon', '{$old['makhachhang']}', '{$old['manhanvien']}', $km_val, '{$old['ngaylap']}', '{$old['phuongthucban']}', '{$old['thanhtoan']}', '$final_total')";
 
             if ($con->query($sql_dh)) {
                 $cleaned_cart = [];
@@ -104,8 +104,10 @@ if (isset($_POST['btn_save_order'])) {
                     $con->query($sql_update_kho);
                 }
                 // tính điểm tích lũy
-                if (!empty($old_kh)) {
+                $ma_khach_mua_hang = $old['makhachhang'];
+                if (!empty($ma_khach_mua_hang)) {
                 
+                    // Logic tính điểm: Tổng tiền / 10.000 (Ví dụ: 100k = 10 điểm)
                     $diem_tich_luy_them = floor($final_total / 10000); 
                     $diem_hien_tai_them = floor($final_total / 1000);
 
@@ -113,7 +115,7 @@ if (isset($_POST['btn_save_order'])) {
                     $sql_update_diem = "UPDATE khachhang 
                                         SET diemtichluy = diemtichluy + $diem_tich_luy_them,
                                             diemhientai = diemhientai + $diem_hien_tai_them
-                                        WHERE makhachhang = '$old_kh'";
+                                        WHERE makhachhang = '$ma_khach_mua_hang'";
                     
                     $con->query($sql_update_diem);
                 }
