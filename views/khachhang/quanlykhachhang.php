@@ -12,37 +12,63 @@ $msg_type = "";
 $edit_customer = null;
 
 if (isset($_POST['btn_save'])) {
-    $makh = $_POST['makhachhang']; 
-    $tenkh = $_POST['tenkhachhang'];
+    // Dùng trim() để loại bỏ khoảng trắng thừa
+    $makh = trim($_POST['makhachhang']); 
+    $tenkh = trim($_POST['tenkhachhang']);
     $gioitinh = $_POST['gioitinh'];
     $ngaysinh = $_POST['ngaysinh'];
-    $email = $_POST['email'];
-    $sdt = $_POST['sdt'];
-    $diachi = $_POST['diachi'];
+    $email = trim($_POST['email']);
+    $sdt = trim($_POST['sdt']);
+    $diachi = trim($_POST['diachi']);
     
-    if (isset($_POST['old_makh']) && !empty($_POST['old_makh'])) {
-        $old_makh = $_POST['old_makh'];
-        $sql = "UPDATE khachhang SET 
-                tenkhachhang='$tenkh', gioitinh='$gioitinh', ngaysinh='$ngaysinh',
-                email='$email', sdt ='$sdt', diachi='$diachi' 
-                WHERE makhachhang = '$old_makh'";
-                
-        if (mysqli_query($conn, $sql)) { 
-            $message = "Cập nhật thành công!"; $msg_type = "success"; 
-        } else { 
-            $message = "Lỗi: " . mysqli_error($conn); $msg_type = "error"; 
-        }
+    // 1. Kiểm tra rỗng trường SĐT
+    if (empty($sdt)) {
+        $message = "Vui lòng điền vào trường này "; 
+        $msg_type = "error"; 
     } else {
-        $check = mysqli_query($conn, "SELECT * FROM khachhang WHERE makhachhang='$makh'");
-        if (mysqli_num_rows($check) > 0) { 
-            $message = "Mã KH '$makh' đã tồn tại!"; $msg_type = "error"; 
+        // Phân nhánh SỬA hay THÊM MỚI
+        if (isset($_POST['old_makh']) && !empty($_POST['old_makh'])) {
+            // === LUỒNG SỬA KHÁCH HÀNG ===
+            $old_makh = $_POST['old_makh'];
+            
+            // Kiểm tra trùng SĐT (Bỏ qua chính khách hàng đang sửa để họ có thể giữ nguyên SĐT cũ)
+            $check_sdt = mysqli_query($conn, "SELECT * FROM khachhang WHERE sdt='$sdt' AND makhachhang != '$old_makh'");
+            
+            if (mysqli_num_rows($check_sdt) > 0) {
+                $message = "SĐT đã tồn tại!"; 
+                $msg_type = "error";
+            } else {
+                $sql = "UPDATE khachhang SET 
+                        tenkhachhang='$tenkh', gioitinh='$gioitinh', ngaysinh='$ngaysinh',
+                        email='$email', sdt ='$sdt', diachi='$diachi' 
+                        WHERE makhachhang = '$old_makh'";
+                        
+                if (mysqli_query($conn, $sql)) { 
+                    $message = "Cập nhật thành công!"; $msg_type = "success"; 
+                } else { 
+                    $message = "Lỗi: " . mysqli_error($conn); $msg_type = "error"; 
+                }
+            }
         } else {
-            $sql = "INSERT INTO khachhang (makhachhang, tenkhachhang, gioitinh, ngaysinh, diachi, email, sdt, diemtichluy, diemhientai) 
-                    VALUES ('$makh', '$tenkh', '$gioitinh', '$ngaysinh', '$diachi', '$email', '$sdt', 0, 0)";
-            if (mysqli_query($conn, $sql)) { 
-                $message = "Thêm mới thành công!"; $msg_type = "success"; 
-            } else { 
-                $message = "Lỗi: " . mysqli_error($conn); $msg_type = "error"; 
+            // === LUỒNG THÊM MỚI KHÁCH HÀNG ===
+            $check_makh = mysqli_query($conn, "SELECT * FROM khachhang WHERE makhachhang='$makh'");
+            $check_sdt = mysqli_query($conn, "SELECT * FROM khachhang WHERE sdt='$sdt'");
+            
+            if (mysqli_num_rows($check_makh) > 0) { 
+                $message = "Mã KH '$makh' đã tồn tại!"; 
+                $msg_type = "error"; 
+            } elseif (mysqli_num_rows($check_sdt) > 0) { 
+                // Kiểm tra trùng SĐT
+                $message = "SĐT đã tồn tại!"; 
+                $msg_type = "error"; 
+            } else {
+                $sql = "INSERT INTO khachhang (makhachhang, tenkhachhang, gioitinh, ngaysinh, diachi, email, sdt, diemtichluy, diemhientai) 
+                        VALUES ('$makh', '$tenkh', '$gioitinh', '$ngaysinh', '$diachi', '$email', '$sdt', 0, 0)";
+                if (mysqli_query($conn, $sql)) { 
+                    $message = "Thêm mới thành công!"; $msg_type = "success"; 
+                } else { 
+                    $message = "Lỗi: " . mysqli_error($conn); $msg_type = "error"; 
+                }
             }
         }
     }
