@@ -1,8 +1,11 @@
 <?php
 
 require_once '../connectdb.php';
-if (isset($con)) $conn = $con;
-
+if (isset($con))
+    { $conn = $con;
+ } else {
+    die("Lỗi kết nối");
+}
 $rank_rules = [
     'Đồng' => ['point' => 100, 'benefit' => '<i class="fa-solid fa-gift"></i> Quà gia nhập'],
     'Bạc' => ['point' => 500, 'benefit' => '<i class="fa-solid fa-cake-candles"></i> Quà sinh nhật 200k'],
