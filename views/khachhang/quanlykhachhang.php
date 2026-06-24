@@ -12,7 +12,7 @@ $msg_type = "";
 $edit_customer = null;
 
 if (isset($_POST['btn_save'])) {
-    // Dùng trim() để loại bỏ khoảng trắng thừa
+    // Dùng trim() để loại bỏ khoảng trắng thừa người dùng vô tình gõ vào
     $makh = trim($_POST['makhachhang']); 
     $tenkh = trim($_POST['tenkhachhang']);
     $gioitinh = $_POST['gioitinh'];
@@ -21,17 +21,32 @@ if (isset($_POST['btn_save'])) {
     $sdt = trim($_POST['sdt']);
     $diachi = trim($_POST['diachi']);
     
-    // 1. Kiểm tra rỗng trường SĐT
-    if (empty($sdt)) {
-        $message = "Vui lòng điền vào trường này "; 
-        $msg_type = "error"; 
+    // ==========================================
+    // KHỐI KIỂM TRA TRỐNG DỮ LIỆU (VALIDATION)
+    // ==========================================
+    if (empty($makh)) {
+        $message = "Vui lòng nhập Mã khách hàng!"; 
+        $msg_type = "error";
+    } elseif (empty($tenkh)) {
+        $message = "Vui lòng nhập Họ tên khách hàng!"; 
+        $msg_type = "error";
+    } elseif (empty($sdt)) {
+        $message = "Vui lòng nhập Số điện thoại!"; 
+        $msg_type = "error";
+    } elseif (!preg_match('/^[0-9]+$/', $sdt)) {
+        // KIỂM TRA KÝ TỰ: Nếu chuỗi SĐT có chứa chữ cái hoặc ký tự đặc biệt
+        $message = "Số điện thoại không hợp lệ!"; 
+        $msg_type = "error";
     } else {
-        // Phân nhánh SỬA hay THÊM MỚI
+        // ==========================================
+        // DỮ LIỆU ĐÃ ĐẦY ĐỦ -> TIẾN HÀNH XỬ LÝ DB
+        // ==========================================
+        
         if (isset($_POST['old_makh']) && !empty($_POST['old_makh'])) {
-            // === LUỒNG SỬA KHÁCH HÀNG ===
+            // --- LUỒNG SỬA KHÁCH HÀNG ---
             $old_makh = $_POST['old_makh'];
             
-            // Kiểm tra trùng SĐT (Bỏ qua chính khách hàng đang sửa để họ có thể giữ nguyên SĐT cũ)
+            // Kiểm tra trùng SĐT với người khác
             $check_sdt = mysqli_query($conn, "SELECT * FROM khachhang WHERE sdt='$sdt' AND makhachhang != '$old_makh'");
             
             if (mysqli_num_rows($check_sdt) > 0) {
@@ -50,7 +65,7 @@ if (isset($_POST['btn_save'])) {
                 }
             }
         } else {
-            // === LUỒNG THÊM MỚI KHÁCH HÀNG ===
+            // --- LUỒNG THÊM MỚI KHÁCH HÀNG ---
             $check_makh = mysqli_query($conn, "SELECT * FROM khachhang WHERE makhachhang='$makh'");
             $check_sdt = mysqli_query($conn, "SELECT * FROM khachhang WHERE sdt='$sdt'");
             
@@ -58,7 +73,6 @@ if (isset($_POST['btn_save'])) {
                 $message = "Mã KH '$makh' đã tồn tại!"; 
                 $msg_type = "error"; 
             } elseif (mysqli_num_rows($check_sdt) > 0) { 
-                // Kiểm tra trùng SĐT
                 $message = "SĐT đã tồn tại!"; 
                 $msg_type = "error"; 
             } else {
@@ -154,14 +168,11 @@ $list_customers = mysqli_query($conn, $sql_list);
                     
                     <div class="form-group">
                         <label class="form-label">Mã KH <span style="color:red">*</span></label>
-                        <input type="text" name="makhachhang" class="form-control" required placeholder="VD: KH001" 
-                               value="<?php echo ($edit_customer) ? $edit_customer['makhachhang'] : ''; ?>"
-                               <?php echo ($edit_customer) ? 'readonly' : ''; ?>>
+                        <input type="text" name="makhachhang" class="form-control" placeholder="VD: KH001" value="<?php echo ($edit_customer) ? $edit_customer['makhachhang'] : ''; ?>" <?php echo ($edit_customer) ? 'readonly' : ''; ?>>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Họ Tên <span style="color:red">*</span></label>
-                        <input type="text" name="tenkhachhang" class="form-control" required 
-                               value="<?php echo ($edit_customer) ? $edit_customer['tenkhachhang'] : ''; ?>">
+                        <input type="text" name="tenkhachhang" class="form-control" value="<?php echo ($edit_customer) ? $edit_customer['tenkhachhang'] : ''; ?> ">
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                         <div class="form-group">
@@ -178,8 +189,8 @@ $list_customers = mysqli_query($conn, $sql_list);
                     </div>
                     
                     <div class="form-group">
-                        <label class="form-label">SĐT</label>
-                        <input type="number" name="sdt" class="form-control" value="<?php echo ($edit_customer) ? $edit_customer['sdt'] : ''; ?>">
+                    <label class="form-label">SĐT <span style="color:red">*</span></label>
+                    <input type="text" name="sdt" class="form-control" placeholder="VD: 0912345678" value="<?php echo ($edit_customer) ? $edit_customer['sdt'] : ''; ?>">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Email</label>
