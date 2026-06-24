@@ -11,8 +11,9 @@ $message = "";
 $msg_type = "";
 $edit_customer = null;
 
+$errors = []; // Mảng chứa các lỗi cụ thể của từng trường
+
 if (isset($_POST['btn_save'])) {
-    // Dùng trim() để loại bỏ khoảng trắng thừa người dùng vô tình gõ vào
     $makh = trim($_POST['makhachhang']); 
     $tenkh = trim($_POST['tenkhachhang']);
     $gioitinh = $_POST['gioitinh'];
@@ -21,68 +22,66 @@ if (isset($_POST['btn_save'])) {
     $sdt = trim($_POST['sdt']);
     $diachi = trim($_POST['diachi']);
     
-    // ==========================================
-    // KHỐI KIỂM TRA TRỐNG DỮ LIỆU (VALIDATION)
-    // ==========================================
+    // 1. KIỂM TRA ĐỘC LẬP TỪNG TRƯỜNG NHẬP LIỆU
     if (empty($makh)) {
-        $message = "Vui lòng nhập Mã khách hàng!"; 
-        $msg_type = "error";
-    } elseif (empty($tenkh)) {
-        $message = "Vui lòng nhập Họ tên khách hàng!"; 
-        $msg_type = "error";
-    } elseif (empty($sdt)) {
-        $message = "Vui lòng nhập Số điện thoại!"; 
-        $msg_type = "error";
+        $errors['makh'] = "Vui lòng nhập Mã khách hàng!";
+    }
+    
+    if (empty($tenkh)) {
+        $errors['tenkh'] = "Vui lòng nhập Họ tên khách hàng!";
+    }
+    
+    if (empty($sdt)) {
+        $errors['sdt'] = "Vui lòng nhập Số điện thoại!";
     } elseif (!preg_match('/^[0-9]+$/', $sdt)) {
-        // KIỂM TRA KÝ TỰ: Nếu chuỗi SĐT có chứa chữ cái hoặc ký tự đặc biệt
-        $message = "Số điện thoại không hợp lệ!"; 
-        $msg_type = "error";
-    } else {
-        // ==========================================
-        // DỮ LIỆU ĐÃ ĐẦY ĐỦ -> TIẾN HÀNH XỬ LÝ DB
-        // ==========================================
-        
-        if (isset($_POST['old_makh']) && !empty($_POST['old_makh'])) {
-            // --- LUỒNG SỬA KHÁCH HÀNG ---
-            $old_makh = $_POST['old_makh'];
-            
-            // Kiểm tra trùng SĐT với người khác
+        $errors['sdt'] = "Số điện thoại không hợp lệ!";
+    }
+
+    // 2. KIỂM TRA TRÙNG LẶP DATABASE (Chỉ check nếu trường đó đã được nhập)
+    if (isset($_POST['old_makh']) && !empty($_POST['old_makh'])) {
+        // --- LUỒNG SỬA ---
+        $old_makh = $_POST['old_makh'];
+        if (!empty($sdt)) {
             $check_sdt = mysqli_query($conn, "SELECT * FROM khachhang WHERE sdt='$sdt' AND makhachhang != '$old_makh'");
-            
             if (mysqli_num_rows($check_sdt) > 0) {
-                $message = "SĐT đã tồn tại!"; 
-                $msg_type = "error";
-            } else {
-                $sql = "UPDATE khachhang SET 
-                        tenkhachhang='$tenkh', gioitinh='$gioitinh', ngaysinh='$ngaysinh',
-                        email='$email', sdt ='$sdt', diachi='$diachi' 
-                        WHERE makhachhang = '$old_makh'";
-                        
-                if (mysqli_query($conn, $sql)) { 
-                    $message = "Cập nhật thành công!"; $msg_type = "success"; 
-                } else { 
-                    $message = "Lỗi: " . mysqli_error($conn); $msg_type = "error"; 
-                }
+                $errors['sdt'] = "SĐT đã tồn tại!";
+            }
+        }
+    } else {
+        // --- LUỒNG THÊM MỚI ---
+        if (!empty($makh)) {
+            $check_makh = mysqli_query($conn, "SELECT * FROM khachhang WHERE makhachhang='$makh'");
+            if (mysqli_num_rows($check_makh) > 0) {
+                $errors['makh'] = "Mã KH '$makh' đã tồn tại!";
+            }
+        }
+        if (!empty($sdt)) {
+            $check_sdt = mysqli_query($conn, "SELECT * FROM khachhang WHERE sdt='$sdt'");
+            if (mysqli_num_rows($check_sdt) > 0) {
+                $errors['sdt'] = "SĐT đã tồn tại!";
+            }
+        }
+    }
+
+    // 3. TIẾN HÀNH LƯU NẾU KHÔNG CÓ BẤT KỲ LỖI NÀO
+    if (empty($errors)) {
+        if (isset($_POST['old_makh']) && !empty($_POST['old_makh'])) {
+            $sql = "UPDATE khachhang SET 
+                    tenkhachhang='$tenkh', gioitinh='$gioitinh', ngaysinh='$ngaysinh',
+                    email='$email', sdt ='$sdt', diachi='$diachi' 
+                    WHERE makhachhang = '$old_makh'";
+            if (mysqli_query($conn, $sql)) { 
+                $message = "Cập nhật thành công!"; $msg_type = "success"; 
+            } else { 
+                $message = "Lỗi SQL: " . mysqli_error($conn); $msg_type = "error"; 
             }
         } else {
-            // --- LUỒNG THÊM MỚI KHÁCH HÀNG ---
-            $check_makh = mysqli_query($conn, "SELECT * FROM khachhang WHERE makhachhang='$makh'");
-            $check_sdt = mysqli_query($conn, "SELECT * FROM khachhang WHERE sdt='$sdt'");
-            
-            if (mysqli_num_rows($check_makh) > 0) { 
-                $message = "Mã KH '$makh' đã tồn tại!"; 
-                $msg_type = "error"; 
-            } elseif (mysqli_num_rows($check_sdt) > 0) { 
-                $message = "SĐT đã tồn tại!"; 
-                $msg_type = "error"; 
-            } else {
-                $sql = "INSERT INTO khachhang (makhachhang, tenkhachhang, gioitinh, ngaysinh, diachi, email, sdt, diemtichluy, diemhientai) 
-                        VALUES ('$makh', '$tenkh', '$gioitinh', '$ngaysinh', '$diachi', '$email', '$sdt', 0, 0)";
-                if (mysqli_query($conn, $sql)) { 
-                    $message = "Thêm mới thành công!"; $msg_type = "success"; 
-                } else { 
-                    $message = "Lỗi: " . mysqli_error($conn); $msg_type = "error"; 
-                }
+            $sql = "INSERT INTO khachhang (makhachhang, tenkhachhang, gioitinh, ngaysinh, diachi, email, sdt, diemtichluy, diemhientai) 
+                    VALUES ('$makh', '$tenkh', '$gioitinh', '$ngaysinh', '$diachi', '$email', '$sdt', 0, 0)";
+            if (mysqli_query($conn, $sql)) { 
+                $message = "Thêm mới thành công!"; $msg_type = "success"; 
+            } else { 
+                $message = "Lỗi SQL: " . mysqli_error($conn); $msg_type = "error"; 
             }
         }
     }
@@ -167,8 +166,12 @@ $list_customers = mysqli_query($conn, $sql_list);
                     <input type="hidden" name="old_makh" value="<?php echo ($edit_customer) ? $edit_customer['makhachhang'] : ''; ?>">
                     
                     <div class="form-group">
-                        <label class="form-label">Mã KH <span style="color:red">*</span></label>
-                        <input type="text" name="makhachhang" class="form-control" placeholder="VD: KH001" value="<?php echo ($edit_customer) ? $edit_customer['makhachhang'] : ''; ?>" <?php echo ($edit_customer) ? 'readonly' : ''; ?>>
+                    <label class="form-label">Mã KH <span style="color:red">*</span></label>
+                    <input type="text" name="makhachhang" class="form-control" placeholder="VD: KH001" 
+                    value="<?php echo ($edit_customer) ? $edit_customer['makhachhang'] : (isset($_POST['makhachhang']) ? $_POST['makhachhang'] : ''); ?>"
+                    <?php echo ($edit_customer) ? 'readonly' : ''; ?>>
+    <!-- Hiện lỗi Mã KH -->
+                     <?php if(isset($errors['makh'])) echo "<small style='color: red; font-style: italic; margin-top: 5px; display: block;'><i class='fa-solid fa-circle-exclamation'></i> ".$errors['makh']."</small>"; ?>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Họ Tên <span style="color:red">*</span></label>
@@ -189,9 +192,12 @@ $list_customers = mysqli_query($conn, $sql_list);
                     </div>
                     
                     <div class="form-group">
-                    <label class="form-label">SĐT <span style="color:red">*</span></label>
-                    <input type="text" name="sdt" class="form-control" placeholder="VD: 0912345678" value="<?php echo ($edit_customer) ? $edit_customer['sdt'] : ''; ?>">
-                    </div>
+    <label class="form-label">SĐT <span style="color:red">*</span></label>
+    <input type="text" name="sdt" class="form-control" placeholder="VD: 0912345678"
+           value="<?php echo ($edit_customer) ? $edit_customer['sdt'] : (isset($_POST['sdt']) ? $_POST['sdt'] : ''); ?>">
+    <!-- Hiện lỗi SĐT -->
+    <?php if(isset($errors['sdt'])) echo "<small style='color: red; font-style: italic; margin-top: 5px; display: block;'><i class='fa-solid fa-circle-exclamation'></i> ".$errors['sdt']."</small>"; ?>
+</div>
                     <div class="form-group">
                         <label class="form-label">Email</label>
                         <input type="email" name="email" class="form-control" value="<?php echo ($edit_customer) ? $edit_customer['email'] : ''; ?>">
