@@ -72,6 +72,7 @@ if (isset($_POST['btn_save'])) {
                     WHERE makhachhang = '$old_makh'";
             if (mysqli_query($conn, $sql)) { 
                 $message = "Cập nhật thành công!"; $msg_type = "success"; 
+                $_POST = array();
             } else { 
                 $message = "Lỗi SQL: " . mysqli_error($conn); $msg_type = "error"; 
             }
@@ -80,9 +81,23 @@ if (isset($_POST['btn_save'])) {
                     VALUES ('$makh', '$tenkh', '$gioitinh', '$ngaysinh', '$diachi', '$email', '$sdt', 0, 0)";
             if (mysqli_query($conn, $sql)) { 
                 $message = "Thêm mới thành công!"; $msg_type = "success"; 
+                $_POST = array();
             } else { 
                 $message = "Lỗi SQL: " . mysqli_error($conn); $msg_type = "error"; 
             }
+        }
+    } else {
+        if (isset($_POST['old_makh']) && !empty($_POST['old_makh'])) {
+            // Tái tạo lại biến $edit_customer từ dữ liệu POST để form HTML giữ nguyên giao diện "Cập Nhật"
+            $edit_customer = [
+                'makhachhang' => $_POST['old_makh'], // Giữ lại mã cũ để mỏ neo không bị mất
+                'tenkhachhang' => $_POST['tenkhachhang'],
+                'gioitinh' => $_POST['gioitinh'],
+                'ngaysinh' => $_POST['ngaysinh'],
+                'sdt' => $_POST['sdt'],
+                'email' => $_POST['email'],
+                'diachi' => $_POST['diachi']
+            ];
         }
     }
 }
