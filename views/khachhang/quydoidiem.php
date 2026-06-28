@@ -41,6 +41,7 @@ $gift_list = [
 
 $message = "";
 $msg_type = "";
+$diem_thieu = 0;
 
 
 if (isset($_POST['btn_exchange'])) {
@@ -71,7 +72,8 @@ if (isset($_POST['btn_exchange'])) {
         $ten_qua = $gift_list[$id_qua]['name'];
         
         if ($diem_co < $diem_qua) {
-            $message = "Khách <b>{$cust['tenkhachhang']}</b> còn thiếu " . ($diem_qua - $diem_co) . " điểm để đổi <b>$ten_qua</b>.";
+            $diem_thieu = $diem_qua - $diem_co;
+            $message = "Khách <b>{$cust['tenkhachhang']}</b> chưa đủ điểm để đổi <b>$ten_qua</b>.";            
             $msg_type = "error";
         } else {
             $diem_con_lai = $diem_co - $diem_qua;
@@ -181,6 +183,12 @@ $history_result = mysqli_query($conn, $sql_history_list);
                     </select>
                     <div id="custInfo" style="display:none; margin-top: 8px; font-size: 14px; color: #555;">
                         Điểm khả dụng: <span id="viewPoint" style="color: var(--primary-color); font-weight: bold; font-size: 16px;">0</span>
+                    </div>
+                    <?php if (isset($diem_thieu) && $diem_thieu > 0): ?>
+                        <div style="margin-top: 8px; color: red; font-size: 13px; font-style: italic;">
+                            <i class="fa-solid fa-circle-exclamation"></i> Còn thiếu <?php echo number_format($diem_thieu); ?> điểm
+                        </div>
+                    <?php endif; ?>
                     </div>
                 </div>
 
