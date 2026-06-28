@@ -44,11 +44,22 @@ $msg_type = "";
 
 
 if (isset($_POST['btn_exchange'])) {
-    $code_khach = $_POST['customer_code'];
-    $id_qua = $_POST['gift_id'];
+    // Dùng toán tử ?? để tránh lỗi "Undefined index" khi không có dữ liệu gửi lên
+    $code_khach = $_POST['customer_code'] ?? '';
+    $id_qua = $_POST['gift_id'] ?? '';
     
-    if (empty($code_khach) || empty($id_qua)) {
+    // TÁCH BIỆT CÁC TRƯỜNG HỢP KIỂM TRA RỖNG (PHỤC VỤ TC_04, TC_05, TC_06)
+    if (empty($code_khach) && empty($id_qua)) {
+        // Trường hợp trống cả 2 (Bypass toàn bộ)
         $message = "Vui lòng chọn khách hàng và quà tặng!";
+        $msg_type = "error";
+    } elseif (empty($code_khach)) {
+        // Trường hợp chỉ chọn Quà, quên chọn Khách hàng (TC_05)
+        $message = "Vui lòng chọn khách hàng!";
+        $msg_type = "error";
+    } elseif (empty($id_qua)) {
+        // Trường hợp chỉ chọn Khách hàng, quên chọn Quà (TC_04)
+        $message = "Vui lòng lựa chọn món quà!";
         $msg_type = "error";
     } else {
 
@@ -130,7 +141,7 @@ $history_result = mysqli_query($conn, $sql_history_list);
                 <div class="gift-grid">
                     <?php foreach($gift_list as $id => $gift): ?>
                     <label>
-                        <input type="radio" name="gift_id" value="<?php echo $id; ?>" class="gift-radio-input" required>
+                        <input type="radio" name="gift_id" value="<?php echo $id; ?>" class="gift-radio-input">
                         <div class="gift-card-content gift-card">
                             <div class="gift-img-placeholder">
                                 <?php echo $gift['image']; ?>
@@ -157,7 +168,7 @@ $history_result = mysqli_query($conn, $sql_history_list);
             <div class="exchange-panel">
                 <div class="form-group">
                     <label class="form-label">Chọn Khách Hàng:</label>
-                    <select name="customer_code" class="form-control" required id="custSelect" onchange="showPoint()">
+                    <select name="customer_code" class="form-control" id="custSelect" onchange="showPoint()">
                         <option value="" data-point="0">-- Tìm kiếm khách hàng --</option>
                         <?php 
                         mysqli_data_seek($list_customers, 0);
