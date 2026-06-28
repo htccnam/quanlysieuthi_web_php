@@ -41,14 +41,26 @@ $gift_list = [
 
 $message = "";
 $msg_type = "";
+$diem_thieu = 0;
 
 
 if (isset($_POST['btn_exchange'])) {
-    $code_khach = $_POST['customer_code'];
-    $id_qua = $_POST['gift_id'];
+    // Dùng toán tử ?? để tránh lỗi "Undefined index" khi không có dữ liệu gửi lên
+    $code_khach = $_POST['customer_code'] ?? '';
+    $id_qua = $_POST['gift_id'] ?? '';
     
-    if (empty($code_khach) || empty($id_qua)) {
+    // TÁCH BIỆT CÁC TRƯỜNG HỢP KIỂM TRA RỖNG (PHỤC VỤ TC_04, TC_05, TC_06)
+    if (empty($code_khach) && empty($id_qua)) {
+        // Trường hợp trống cả 2 (Bypass toàn bộ)
         $message = "Vui lòng chọn khách hàng và quà tặng!";
+        $msg_type = "error";
+    } elseif (empty($code_khach)) {
+        // Trường hợp chỉ chọn Quà, quên chọn Khách hàng (TC_05)
+        $message = "Vui lòng chọn khách hàng!";
+        $msg_type = "error";
+    } elseif (empty($id_qua)) {
+        // Trường hợp chỉ chọn Khách hàng, quên chọn Quà (TC_04)
+        $message = "Vui lòng lựa chọn món quà!";
         $msg_type = "error";
     } else {
 
@@ -60,7 +72,8 @@ if (isset($_POST['btn_exchange'])) {
         $ten_qua = $gift_list[$id_qua]['name'];
         
         if ($diem_co < $diem_qua) {
-            $message = "Khách <b>{$cust['tenkhachhang']}</b> còn thiếu " . ($diem_qua - $diem_co) . " điểm để đổi <b>$ten_qua</b>.";
+            $diem_thieu = $diem_qua - $diem_co;
+            $message = "Khách <b>{$cust['tenkhachhang']}</b> chưa đủ điểm để đổi <b>$ten_qua</b>.";            
             $msg_type = "error";
         } else {
             $diem_con_lai = $diem_co - $diem_qua;
@@ -69,7 +82,7 @@ if (isset($_POST['btn_exchange'])) {
             
             if (mysqli_query($conn, $sql_update)) {
 
-                $sql_history = "INSERT INTO lichsu_doiqua (ma_khachhang, ten_qua, diem_da_doi) VALUES ('$code_khach', '$ten_qua', $diem_qua)";
+                $sql_history = "INSERT INTO lichsudoiqua (makhachhang, tenqua, diemtru, thoigian) VALUES ('$code_khach', '$ten_qua', $diem_qua, NOW())";
                 mysqli_query($conn, $sql_history);
 
                 $message = "<div style='text-align:center;'>
@@ -90,11 +103,11 @@ if (isset($_POST['btn_exchange'])) {
 $list_customers = mysqli_query($conn, "SELECT * FROM khachhang ORDER BY tenkhachhang ASC");
 
 
-$sql_history_list = "SELECT h.*, k.tenkhachhang, k.makhachhang 
-                     FROM lichsu_doiqua h 
-                     JOIN khachhang k ON h.ma_khachhang = k.makhachhang 
-                     ORDER BY h.ngay_doi DESC";
-$history_result = mysqli_query($con, $sql_history_list);
+$sql_history_list = "SELECT h.*, k.tenkhachhang 
+                     FROM lichsudoiqua h 
+                     JOIN khachhang k ON h.makhachhang = k.makhachhang 
+                     ORDER BY h.thoigian DESC";
+$history_result = mysqli_query($conn, $sql_history_list);
 ?>
 
 <!DOCTYPE html>
@@ -130,7 +143,7 @@ $history_result = mysqli_query($con, $sql_history_list);
                 <div class="gift-grid">
                     <?php foreach($gift_list as $id => $gift): ?>
                     <label>
-                        <input type="radio" name="gift_id" value="<?php echo $id; ?>" class="gift-radio-input" required>
+                        <input type="radio" name="gift_id" value="<?php echo $id; ?>" class="gift-radio-input">
                         <div class="gift-card-content gift-card">
                             <div class="gift-img-placeholder">
                                 <?php echo $gift['image']; ?>
@@ -157,7 +170,7 @@ $history_result = mysqli_query($con, $sql_history_list);
             <div class="exchange-panel">
                 <div class="form-group">
                     <label class="form-label">Chọn Khách Hàng:</label>
-                    <select name="customer_code" class="form-control" required id="custSelect" onchange="showPoint()">
+                    <select name="customer_code" class="form-control" id="custSelect" onchange="showPoint()">
                         <option value="" data-point="0">-- Tìm kiếm khách hàng --</option>
                         <?php 
                         mysqli_data_seek($list_customers, 0);
@@ -170,6 +183,12 @@ $history_result = mysqli_query($con, $sql_history_list);
                     </select>
                     <div id="custInfo" style="display:none; margin-top: 8px; font-size: 14px; color: #555;">
                         Điểm khả dụng: <span id="viewPoint" style="color: var(--primary-color); font-weight: bold; font-size: 16px;">0</span>
+                    </div>
+                    <?php if (isset($diem_thieu) && $diem_thieu > 0): ?>
+                        <div style="margin-top: 8px; color: red; font-size: 13px; font-style: italic;">
+                            <i class="fa-solid fa-circle-exclamation"></i> Còn thiếu <?php echo number_format($diem_thieu); ?> điểm
+                        </div>
+                    <?php endif; ?>
                     </div>
                 </div>
 
@@ -189,32 +208,32 @@ $history_result = mysqli_query($con, $sql_history_list);
                 <span class="close-btn" onclick="closeHistory()">&times;</span>
             </div>
             <div class="modal-body">
-                <table class="history-table">
-                    <thead>
-                        <tr>
-                            <th>Thời Gian</th>
-                            <th>Khách Hàng</th>
-                            <th>Món Quà</th>
-                            <th>Điểm Trừ</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if (mysqli_num_rows($history_result) > 0): ?>
-                            <?php while($h = mysqli_fetch_assoc($history_result)): ?>
+<table class="history-table">
+                        <thead>
                             <tr>
-                                <td><?php echo date('d/m/Y H:i', strtotime($h['ngay_doi'])); ?></td>
-                                <td>
-                                    <b><?php echo $h['tenkhachhang']; ?></b><br>
-                                    <small style="color:#888"><?php echo $h['makhachhang']; ?></small>
-                                </td>
-                                <td style="color: var(--primary-color); font-weight: 500;"><?php echo $h['ten_qua']; ?></td>
-                                <td style="color: var(--danger);">-<?php echo number_format($h['diem_da_doi']); ?></td>
+                                <th>Thời Gian</th>
+                                <th>Khách Hàng</th>
+                                <th>Món Quà</th>
+                                <th>Điểm Trừ</th>
                             </tr>
-                            <?php endwhile; ?>
-                        <?php else: ?>
-                            <tr><td colspan="4" style="text-align:center; padding: 20px; color:#888;">Chưa có lịch sử đổi quà nào.</td></tr>
-                        <?php endif; ?>
-                    </tbody>
+                        </thead>
+                        <tbody>
+                            <?php if (mysqli_num_rows($history_result) > 0): ?>
+                                <?php while($h = mysqli_fetch_assoc($history_result)): ?>
+                                <tr>
+                                    <td><?php echo date('d/m/Y H:i', strtotime($h['thoigian'])); ?></td>
+                                    <td>
+                                        <b><?php echo $h['tenkhachhang']; ?></b><br>
+                                        <small style="color:#888"><?php echo $h['makhachhang']; ?></small>
+                                    </td>
+                                    <td style="color: var(--primary-color); font-weight: 500;"><?php echo $h['tenqua']; ?></td>
+                                    <td style="color: var(--danger);">-<?php echo number_format($h['diemtru']); ?></td>
+                                </tr>
+                                <?php endwhile; ?>
+                            <?php else: ?>
+                                <tr><td colspan="4" style="text-align:center; padding: 20px; color:#888;">Chưa có lịch sử đổi quà nào.</td></tr>
+                            <?php endif; ?>
+                        </tbody>
                 </table>
             </div>
             <div class="modal-footer">
