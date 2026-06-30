@@ -1,7 +1,11 @@
 <?php
 
 include_once("../connectdb.php");
-
+if (isset($con)) {
+    $conn = $con;
+} else {
+    die("Lỗi kết nối");
+}
 if (isset($_POST['btnSua'])) {
     $textMaChucVu = $_POST['txtMaChucVu'];
     $textTenChucVu = $_POST['txtTenChucVu'];
@@ -14,7 +18,8 @@ if (isset($_POST['btnSua'])) {
                         </script>";
 
     } catch (Exception $e) {
-        echo "<script> alert('lỗi sửa chức vụ'+$e->getMessage()) </script>";
+        $msg = $e->getMessage();
+        echo "<script> alert('lỗi sửa chức vụ: " . addslashes($msg) . "') </script>";
     }
 
 }

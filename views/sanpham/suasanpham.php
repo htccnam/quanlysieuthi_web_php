@@ -1,5 +1,10 @@
 <?php 
         include_once("../connectdb.php");
+        if (isset($con)) {
+    $conn = $con;
+} else {
+    die("Lỗi kết nối");
+}
     $rowSP = [];
     if(isset($_GET['masanpham'])){
         $maSP = $_GET['masanpham'];

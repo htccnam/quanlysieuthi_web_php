@@ -1,7 +1,11 @@
 <?php 
 include_once("../connectdb.php");
 $textMaNhanVien = $_GET['manhanvien'];
-
+if (isset($con)) {
+    $conn = $con;
+} else {
+    die("Lỗi kết nối");
+}
 header("Content-type: text/csv; charset=UTF-8");
 header("Content-Disposition: attachment ; filename=danhsach.csv");
 

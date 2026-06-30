@@ -1,6 +1,10 @@
 <?php 
     include_once("../connectdb.php");
-  
+  if (isset($con)) {
+    $conn = $con;
+} else {
+    die("Lỗi kết nối");
+}
    $rowNCC = []; 
    if(isset($_GET['manhacungcap'])){
        $txtMa = $_GET['manhacungcap'];

@@ -1,6 +1,10 @@
 <?php
 include_once("../connectdb.php");
-
+if (isset($con)) {
+    $conn = $con;
+} else {
+    die("Lỗi kết nối");
+}
 if (isset($_POST['btnThem'])) {
     $textMaNhanVien = $_POST['txtMaNhanVien'];
     $textTenNhanVien = $_POST['txtTenNhanVien'];

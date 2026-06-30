@@ -1,5 +1,10 @@
 <?php 
         include_once("../connectdb.php");
+        if (isset($con)) {
+    $conn = $con;
+} else {
+    die("Lỗi kết nối");
+}
     $dsLoai = mysqli_query($con, "SELECT * FROM loaihang");
     $dsNCC = mysqli_query($con, "SELECT * FROM nhacungcap");
 

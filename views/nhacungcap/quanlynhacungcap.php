@@ -1,6 +1,10 @@
 <?php
 include_once("../connectdb.php");
-
+if (isset($con)) {
+    $conn = $con;
+} else {
+    die("Lỗi kết nối");
+}
 if (isset($_POST['btnThem'])) {
     $txtManhacungcap = $_POST['txtManhacungcap'];
     $txtTennhacungcap = $_POST['txtTennhacungcap'];
@@ -33,7 +37,7 @@ if (isset($_GET['btnXoa'])) {
             window.loction='quanlynhacungcap.php';
         </script> ";
     }else{
-    $sqlDelete = "DELETE FROM nhacungcap WHERE manhacungcap = '$txtManhacungcapForm'";
+    $sqlDelete = "DELETE FROM nhacungcap WHERE manhacungcap = '$maXoa'";
     mysqli_query($con, $sqlDelete);
     echo "<script> alert('Xóa thành công'); window.location='quanlynhacungcap.php'; </script>";
 }
