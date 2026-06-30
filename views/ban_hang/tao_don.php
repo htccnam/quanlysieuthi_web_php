@@ -15,8 +15,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 }
 
 $old = $_SESSION['old_data'] ?? [
-    'madonhang' => '', 'ngaylap' => date('Y-m-d'), 'manhanvien' => '', 
-    'makhachhang' => '', 'phuongthucban' => 'Tại quầy', 'thanhtoan' => 'Tiền mặt', 'makhuyenmai' => ''
+    'madonhang' => '',
+    'ngaylap' => date('Y-m-d'),
+    'manhanvien' => '',
+    'makhachhang' => '',
+    'phuongthucban' => 'Tại quầy',
+    'thanhtoan' => 'Tiền mặt',
+    'makhuyenmai' => ''
 ];
 
 if (isset($_POST['action']) && $_POST['action'] == 'add_product') {
@@ -30,23 +35,41 @@ if (isset($_POST['action']) && $_POST['action'] == 'add_product') {
         $res = $stmt->get_result();
 
         if ($sp = $res->fetch_assoc()) {
-            $found = false;
+            $tonKhoResult = $con->query("SELECT soluong FROM sanpham WHERE masanpham = '{$sp['masanpham']}'");
+            $tonKhoRow = $tonKhoResult->fetch_assoc();
+            $tonKho = (int)($tonKhoRow['soluong'] ?? 0);
+
+            $soLuongTrongGio = 0;
             if (isset($_SESSION['cart'])) {
-                foreach ($_SESSION['cart'] as &$item) {
+                foreach ($_SESSION['cart'] as $item) {
                     if ($item['masanpham'] == $sp['masanpham']) {
-                        $item['soluong'] += $sl_mua;
-                        $found = true;
+                        $soLuongTrongGio = $item['soluong'];
                         break;
                     }
                 }
             }
-            if (!$found) {
-                $_SESSION['cart'][] = [
-                    'masanpham'  => $sp['masanpham'],
-                    'tensanpham' => $sp['tensanpham'],
-                    'dongia'     => $sp['giaban'],
-                    'soluong'    => $sl_mua
-                ];
+
+            if (($soLuongTrongGio + $sl_mua) > $tonKho) {
+                echo "<script>alert('Không đủ hàng! Sản phẩm \"{$sp['tensanpham']}\" chỉ còn $tonKho sản phẩm trong kho.');</script>";
+            } else {
+                $found = false;
+                if (isset($_SESSION['cart'])) {
+                    foreach ($_SESSION['cart'] as &$item) {
+                        if ($item['masanpham'] == $sp['masanpham']) {
+                            $item['soluong'] += $sl_mua;
+                            $found = true;
+                            break;
+                        }
+                    }
+                }
+                if (!$found) {
+                    $_SESSION['cart'][] = [
+                        'masanpham'  => $sp['masanpham'],
+                        'tensanpham' => $sp['tensanpham'],
+                        'dongia'     => $sp['giaban'],
+                        'soluong'    => $sl_mua
+                    ];
+                }
             }
         }
     }
@@ -57,12 +80,27 @@ if (isset($_POST['action']) && $_POST['action'] == 'add_product') {
 if (isset($_POST['btn_save_order'])) {
     $madon = $old['madonhang'];
     if (!empty($_SESSION['cart']) && !empty($madon)) {
-        
+        foreach ($_SESSION['cart'] as $item) {
+            $ma_sp = $item['masanpham'];
+            $sl_can = $item['soluong'];
+
+            $check_ton = $con->query("SELECT soluong FROM sanpham WHERE masanpham = '$ma_sp'");
+            if ($check_ton && $row = $check_ton->fetch_assoc()) {
+                $ton_kho = (int)$row['soluong'];
+                if ($sl_can > $ton_kho) {
+                    echo "<script>alert('Lỗi: Sản phẩm \"{$item['tensanpham']}\" không đủ tồn kho! Hiện chỉ còn $ton_kho, bạn yêu cầu $sl_can.');</script>";
+                    return;
+                }
+            } else {
+                echo "<script>alert('Lỗi: Sản phẩm mã $ma_sp không tồn tại trong kho!');</script>";
+                return;
+            }
+        }
         $calc_subtotal = 0;
         foreach ($_SESSION['cart'] as $item) {
             $calc_subtotal += $item['soluong'] * $item['dongia'];
         }
-        
+
         $calc_discount = 0;
         if (!empty($old['makhuyenmai'])) {
             $km_q = $con->query("SELECT sotiengiam FROM khuyenmai WHERE makhuyenmai = '{$old['makhuyenmai']}'");
@@ -87,7 +125,9 @@ if (isset($_POST['btn_save_order'])) {
                     $id_sp = $item['masanpham'];
                     if (isset($cleaned_cart[$id_sp])) {
                         $cleaned_cart[$id_sp]['soluong'] += $item['soluong'];
-                    } else { $cleaned_cart[$id_sp] = $item; }
+                    } else {
+                        $cleaned_cart[$id_sp] = $item;
+                    }
                 }
 
                 foreach ($cleaned_cart as $item) {
@@ -106,17 +146,17 @@ if (isset($_POST['btn_save_order'])) {
                 // tính điểm tích lũy
                 $ma_khach_mua_hang = $old['makhachhang'];
                 if (!empty($ma_khach_mua_hang)) {
-                
+
                     // Logic tính điểm: Tổng tiền / 10.000 (Ví dụ: 100k = 10 điểm)
-                    $diem_tich_luy_them = floor($final_total / 10000); 
+                    $diem_tich_luy_them = floor($final_total / 10000);
                     $diem_hien_tai_them = floor($final_total / 1000);
 
-        
+
                     $sql_update_diem = "UPDATE khachhang 
                                         SET diemtichluy = diemtichluy + $diem_tich_luy_them,
                                             diemhientai = diemhientai + $diem_hien_tai_them
                                         WHERE makhachhang = '$ma_khach_mua_hang'";
-                    
+
                     $con->query($sql_update_diem);
                 }
 
@@ -142,27 +182,111 @@ if (isset($_GET['delete'])) {
 
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="UTF-8">
     <title>Tạo Đơn Hàng</title>
     <style>
-        :root { --primary: #3498db; --success: #2ecc71; --dark: #34495e; --bg: #f4f7f6; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); margin: 20px; color: var(--dark); }
-        .grid { display: grid; grid-template-columns: 350px 1fr; gap: 20px; }
-        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        .form-group { margin-bottom: 12px; }
-        label { display: block; font-size: 13px; margin-bottom: 5px; font-weight: 600; }
-        input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
-        .btn { border: none; padding: 12px; border-radius: 5px; color: white; cursor: pointer; font-weight: bold; }
-        .btn-add { background: var(--primary); width: 100px; }
-        .btn-save { background: var(--success); width: 100%; margin-top: 15px; font-size: 16px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th { background: var(--dark); color: white; padding: 12px; text-align: left; }
-        td { padding: 12px; border-bottom: 1px solid #eee; }
-        .total-area { margin-top: 20px; text-align: right; border-top: 2px solid #eee; padding-top: 10px; }
-        .discount-text { color: #e74c3c; font-weight: bold; }
+        :root {
+            --primary: #3498db;
+            --success: #2ecc71;
+            --dark: #34495e;
+            --bg: #f4f7f6;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: var(--bg);
+            margin: 20px;
+            color: var(--dark);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 20px;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+
+        .btn {
+            border: none;
+            padding: 12px;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .btn-add {
+            background: var(--primary);
+            width: 100px;
+        }
+
+        .btn-save {
+            background: var(--success);
+            width: 100%;
+            margin-top: 15px;
+            font-size: 16px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th {
+            background: var(--dark);
+            color: white;
+            padding: 12px;
+            text-align: left;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .total-area {
+            margin-top: 20px;
+            text-align: right;
+            border-top: 2px solid #eee;
+            padding-top: 10px;
+        }
+
+        .discount-text {
+            color: #e74c3c;
+            font-weight: bold;
+        }
     </style>
 </head>
+
 <body>
 
     <form method="POST" id="mainForm">
@@ -244,7 +368,14 @@ if (isset($_GET['delete'])) {
 
                 <table>
                     <thead>
-                        <tr><th>Mã SP</th><th>Tên sản phẩm</th><th>SL</th><th>Đơn giá</th><th>Thành tiền</th><th></th></tr>
+                        <tr>
+                            <th>Mã SP</th>
+                            <th>Tên sản phẩm</th>
+                            <th>SL</th>
+                            <th>Đơn giá</th>
+                            <th>Thành tiền</th>
+                            <th></th>
+                        </tr>
                     </thead>
                     <tbody>
                         <?php
@@ -262,8 +393,11 @@ if (isset($_GET['delete'])) {
                                     <td><?= number_format($tt) ?></td>
                                     <td><a href="?delete=<?= $idx ?>" style="color:red; text-decoration:none">✖</a></td>
                                 </tr>
-                        <?php endforeach; else: ?>
-                            <tr><td colspan="6" style="text-align:center; color:#ccc">Chưa có sản phẩm nào</td></tr>
+                            <?php endforeach;
+                        else: ?>
+                            <tr>
+                                <td colspan="6" style="text-align:center; color:#ccc">Chưa có sản phẩm nào</td>
+                            </tr>
                         <?php endif; ?>
                     </tbody>
                 </table>
@@ -287,4 +421,5 @@ if (isset($_GET['delete'])) {
         </div>
     </form>
 </body>
+
 </html>
