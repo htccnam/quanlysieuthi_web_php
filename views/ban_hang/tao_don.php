@@ -50,7 +50,7 @@ if (isset($_POST['action']) && $_POST['action'] == 'add_product') {
             }
 
             if (($soLuongTrongGio + $sl_mua) > $tonKho) {
-                echo "<script>alert('Không đủ hàng! Sản phẩm \"{$sp['tensanpham']}\" chỉ còn $tonKho sản phẩm trong kho.');</script>";
+                $_SESSION['alert'] = "Không đủ hàng! Sản phẩm \"{$sp['tensanpham']}\" chỉ còn $tonKho sản phẩm trong kho.";
             } else {
                 $found = false;
                 if (isset($_SESSION['cart'])) {
@@ -288,7 +288,12 @@ if (isset($_GET['delete'])) {
 </head>
 
 <body>
-
+    <?php
+    if (isset($_SESSION['alert'])) {
+        echo "<script>alert(" . json_encode($_SESSION['alert']) . ");</script>";
+        unset($_SESSION['alert']); // Xóa sau khi hiển thị
+    }
+    ?>
     <form method="POST" id="mainForm">
         <div class="grid">
             <div class="card">
