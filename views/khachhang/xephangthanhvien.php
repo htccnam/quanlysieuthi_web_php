@@ -40,10 +40,25 @@ if (isset($_POST['btn_update_rank'])) {
     }
 }
 
-if (isset($_GET['action']) && $_GET['action'] == 'reset') {
+if (isset($_GET['action']) && $_GET['action'] == 'reset' && isset($_GET['code'])) {
     $code = $_GET['code'];
-    mysqli_query($conn, "UPDATE khachhang SET hangthanhvien = 'Chưa xếp hạng' WHERE makhachhang = '$code'");
-    $message = "Đã hủy hạng cho mã $code!"; $msg_type = "success";
+    
+    // 1. Truy vấn lấy tên khách hàng để hiển thị thông báo chi tiết
+    $query_kh = mysqli_query($conn, "SELECT tenkhachhang FROM khachhang WHERE makhachhang = '$code'");
+    $kh_data = mysqli_fetch_assoc($query_kh);
+    $ten_kh = $kh_data ? $kh_data['tenkhachhang'] : "";
+
+    // 2. Thực hiện cập nhật hủy hạng
+    $sql_reset = "UPDATE khachhang SET hangthanhvien = 'Chưa xếp hạng' WHERE makhachhang = '$code'";
+    
+    if (mysqli_query($conn, $sql_reset)) {
+        // Thông báo đồng bộ giao diện với chức năng Xét duyệt lên hạng
+        $message = "Đã hủy hạng thành công cho khách hàng <b>$ten_kh</b> (Mã: $code)!"; 
+        $msg_type = "success";
+    } else {
+        $message = "Lỗi khi hủy hạng: " . mysqli_error($conn); 
+        $msg_type = "error";
+    }
 }
 
 $list_customers = mysqli_query($conn, "SELECT * FROM khachhang ORDER BY diemtichluy DESC");
